@@ -1,10 +1,10 @@
 //
 // 1. React-H5-Audio-Player Theme Overrides
 //
-$rhap_theme-color: #b9a0c9;       // Soft pastel purple
-$rhap_background-color: #2e2e2e;  // Dark background
-$rhap_bar-color: #c9c3d6;         // Pastel for volume/progress bars
-$rhap_time-color: #d8d8d8;        // Light gray for time text
+$rhap_theme-color: #f1ae8b;       // Atomic tangerine – warm accent
+$rhap_background-color: #5d576b;  // Wenge – dark background
+$rhap_bar-color: #c8d9bc;         // Tea green – soft progress bars
+$rhap_time-color: #a2a1a6;        // Cadet gray – muted time text
 $rhap_font-family: inherit;
 
 @import 'react-h5-audio-player/src/styles.scss';
@@ -15,16 +15,16 @@ $rhap_font-family: inherit;
 body {
   display: flex;
   justify-content: center;
-  background-color: #F1AE8B;
+  background-color: #26261d;  // Lemon chiffon – light, airy backdrop
 }
 
 .app-container {
-  width: 95vw;              // 95% of the body width
-  margin: 0 auto;          // Center the container horizontally
+  width: 95vw;               // 95% of viewport width
+  margin: 0 auto;            // Center the container horizontally
   display: grid;
   grid-template-columns: 2fr 1fr;  // Left: 2/3, Right: 1/3
   gap: 1rem;
-  background-color: #ED6A5A;
+  background-color: #98453b;  // Bittersweet – vibrant container background
   min-height: 100vh;
   padding: 1rem;
   box-sizing: border-box;
@@ -43,9 +43,9 @@ body {
   flex-direction: column;
   gap: 1rem;
 
-  // (Optional) Button to show/hide queue or anything else
+  // Button to show/hide queue
   .queue-toggle-button {
-    background: #b9a0c9;
+    background: #f1ae8b;  // Atomic tangerine
     color: #fff;
     border: none;
     padding: 0.5rem 0.8rem;
@@ -56,27 +56,27 @@ body {
     align-items: center;
     gap: 0.5rem;
     &:hover {
-      background: #a08bb1;
+      background: #7c8c94;  // Slate gray – a cooler hover tone
     }
   }
 
   .play-queue {
-    background-color: #2e2e2e;
+    background-color: #5d576b;  // Wenge for a deep backdrop
     border-radius: 8px;
     padding: 1rem;
     width: 100%;
 
     h3 {
       margin-top: 0;
-      color: #fff;
+      color: #f4f1bb;  // Lemon chiffon for contrast
     }
 
     .queue-song {
       width: 100%;
       text-align: left;
-      background-color: #2e2e2e;
-      border: 2px solid #b9a0c9;
-      color: #b9a0c9;
+      background-color: #5d576b;  // Wenge
+      border: 2px solid #f1ae8b;   // Atomic tangerine as border
+      color: #f1ae8b;
       border-radius: 25px;
       padding: 0.5rem;
       cursor: pointer;
@@ -85,11 +85,11 @@ body {
       transition: all 0.3s ease;
 
       &:hover {
-        background-color: #b9a0c9;
+        background-color: #f1ae8b;  // Switch to Atomic tangerine on hover
         color: #fff;
       }
       &.active {
-        background-color: #b9a0c9;
+        background-color: #f1ae8b;
         color: #fff;
       }
     }
@@ -105,7 +105,7 @@ body {
   gap: 0.5rem;
 
   label {
-    color: #d8d8d8;
+    color: #e6ebe0;  // Alabaster for light text
     font-size: 0.9rem;
   }
   select {
@@ -113,7 +113,7 @@ body {
     font-size: 0.9rem;
     border-radius: 4px;
     border: none;
-    background-color: #2e2e2e;
+    background-color: #5d576b;  // Wenge
     color: #fff;
     outline: none;
   }
@@ -130,13 +130,13 @@ body {
       font-size: 1rem;
       border: none;
       border-radius: 4px 0 0 4px;
-      background-color: #2e2e2e;
+      background-color: #5d576b;  // Wenge
       color: #fff;
       outline: none;
     }
 
     button {
-      background-color: #b9a0c9;
+      background-color: #f1ae8b;  // Atomic tangerine
       color: #fff;
       border: none;
       padding: 0 1rem;
@@ -149,7 +149,7 @@ body {
       transition: background-color 0.3s ease;
 
       &:hover {
-        background-color: #a08bb1;
+        background-color: #7c8c94;  // Slate gray on hover
       }
     }
   }
@@ -171,12 +171,12 @@ body {
 
 // Reusable base styling for cards
 .card-base {
-  background-color: #2e2e2e;
-  border: 1px solid #b9a0c9;
+  background-color: #5d576b;  // Wenge
+  border: 1px solid #f1ae8b;   // Atomic tangerine
   border-radius: 8px;
   padding: 0.5rem;
   text-align: center;
-  color: #d8d8d8;
+  color: #e6ebe0;  // Alabaster for light text
   cursor: pointer;
   transition: transform 0.3s ease;
 
@@ -204,22 +204,22 @@ body {
   .song-info {
     h4 {
       font-size: 0.9rem;
-      color: #b9a0c9;
+      color: #f1ae8b;  // Atomic tangerine
       margin: 0.2rem 0 0.1rem;
     }
     p {
       font-size: 0.8rem;
       margin: 0;
-      color: #d8d8d8;
+      color: #e6ebe0;  // Alabaster
     }
     .play-count {
       font-size: 0.7rem;
-      color: #a08bb1;
+      color: #a2a1a6;  // Cadet gray
       margin-top: 0.2rem;
     }
   }
 
-  // Two buttons inside the card: "Play Now" and "Add to Queue"
+  // Icon buttons for play, queue, download
   .card-buttons {
     display: flex;
     justify-content: center;
@@ -227,7 +227,7 @@ body {
     margin-top: 0.5rem;
 
     button {
-      background-color: #b9a0c9;
+      background-color: #f1ae8b;  // Atomic tangerine
       color: #fff;
       border: none;
       font-size: 0.75rem;
@@ -237,7 +237,7 @@ body {
       transition: background-color 0.3s ease;
 
       &:hover {
-        background-color: #a08bb1;
+        background-color: #7c8c94;  // Slate gray on hover
       }
     }
 
@@ -259,7 +259,7 @@ body {
   .artist-info {
     h4 {
       font-size: 0.9rem;
-      color: #b9a0c9;
+      color: #f1ae8b;  // Atomic tangerine
       margin: 0.2rem 0 0;
     }
   }
@@ -285,13 +285,13 @@ body {
     justify-content: center;
     align-items: center;
     font-size: 2rem;
-    color: #b9a0c9;
+    color: #f1ae8b;  // Atomic tangerine
   }
 
   .album-info {
     h4 {
       font-size: 0.8rem;
-      color: #b9a0c9;
+      color: #f1ae8b;  // Atomic tangerine
       margin: 0.2rem 0 0.1rem;
     }
   }
@@ -317,13 +317,13 @@ body {
     justify-content: center;
     align-items: center;
     font-size: 2rem;
-    color: #b9a0c9;
+    color: #f1ae8b;  // Atomic tangerine
   }
 
   .playlist-info {
     h4 {
       font-size: 0.8rem;
-      color: #b9a0c9;
+      color: #f1ae8b;  // Atomic tangerine
       margin: 0.2rem 0 0.1rem;
     }
   }
@@ -339,7 +339,7 @@ body {
 
 .next-button {
   padding: 0.5rem 1rem;
-  background-color: #b9a0c9;
+  background-color: #f1ae8b;  // Atomic tangerine
   color: #fff;
   border: none;
   border-radius: 25px;
@@ -348,7 +348,7 @@ body {
   transition: background-color 0.3s ease;
 
   &:hover {
-    background-color: #a08bb1;
+    background-color: #7c8c94;  // Slate gray on hover
   }
 }
 
@@ -370,7 +370,7 @@ body {
   }
 
   .audio-player-container {
-    background: #2e2e2e;
+    background: #5d576b;  // Wenge
     padding: 0.8rem;
     border-radius: 12px;
     box-shadow: 0px -2px 10px rgba(0, 0, 0, 0.3);
@@ -383,12 +383,12 @@ body {
       backdrop-filter: blur(4px);
     }
 
-    // A collapse/expand button in the top-right corner of the player
+    // Collapse/expand button in the top-right corner
     .collapse-button {
       position: absolute;
       top: -35px;   // slightly above the container
       right: 10px;
-      background: #b9a0c9;
+      background: #f1ae8b;  // Atomic tangerine
       color: #fff;
       border: none;
       font-size: 0.8rem;
@@ -396,13 +396,14 @@ body {
       border-radius: 12px;
       cursor: pointer;
       &:hover {
-        background: #a08bb1;
+        background: #7c8c94;  // Slate gray on hover
       }
     }
   }
 }
+
 .download-song-button {
-  background-color: #b9a0c9;
+  background-color: #f1ae8b;  // Atomic tangerine
   color: #fff;
   border: none;
   font-size: 1rem;
@@ -412,11 +413,12 @@ body {
   transition: background-color 0.3s ease;
 
   &:hover {
-    background-color: #a08bb1;
+    background-color: #7c8c94;  // Slate gray
   }
 }
+
 .icon-button {
-  background-color: #b9a0c9;
+  background-color: #f1ae8b;  // Atomic tangerine
   color: #fff;
   border: none;
   font-size: 1.2rem;
@@ -426,6 +428,6 @@ body {
   transition: background-color 0.3s ease;
   
   &:hover {
-    background-color: #a08bb1;
+    background-color: #7c8c94;  // Slate gray on hover
   }
 }

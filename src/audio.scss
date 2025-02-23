@@ -1,6 +1,4 @@
-//
 // 1. React-H5-Audio-Player Theme Overrides
-//
 $rhap_theme-color: #f1ae8b;       // Atomic tangerine – warm accent
 $rhap_background-color: #5d576b;  // Wenge – dark background
 $rhap_bar-color: #c8d9bc;         // Tea green – soft progress bars
@@ -9,116 +7,80 @@ $rhap_font-family: inherit;
 
 @import 'react-h5-audio-player/src/styles.scss';
 
-//
 // 2. Overall Layout
-//
 body {
   display: flex;
   justify-content: center;
-  background-color: #26261d;  // Lemon chiffon – light, airy backdrop
+  background-color: #26261d;
 }
 
 .app-container {
-  width: 95vw;               // 95% of viewport width
-  margin: 0 auto;            // Center the container horizontally
+  width: 95vw;
+  margin: 0 auto;
   display: grid;
-  grid-template-columns: 2fr 1fr;  // Left: 2/3, Right: 1/3
+  grid-template-columns: 2fr 1fr;
   gap: 1rem;
-  background-color: #98453b;  // Bittersweet – vibrant container background
+  background-color: #98453b;
   min-height: 100vh;
   padding: 1rem;
   box-sizing: border-box;
 }
 
-// Left side
+// LEFT SECTION
 .left-section {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
+  position: relative;
 
-// Right side
-.right-section {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-
-  // Button to show/hide queue
-  .queue-toggle-button {
-    background: #f1ae8b;  // Atomic tangerine
-    color: #fff;
-    border: none;
-    padding: 0.5rem 0.8rem;
-    border-radius: 20px;
-    cursor: pointer;
-    font-size: 0.9rem;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    &:hover {
-      background: #7c8c94;  // Slate gray – a cooler hover tone
-    }
-  }
-
-  .play-queue {
-    background-color: #5d576b;  // Wenge for a deep backdrop
+  // Fullscreen lyrics view styles
+  .lyrics-fullscreen {
+    background-color: #5d576b;
+    color: #f4f1bb;
     border-radius: 8px;
     padding: 1rem;
-    width: 100%;
+    height: calc(100vh - 2rem);
+    overflow-y: auto;
 
-    h3 {
-      margin-top: 0;
-      color: #f4f1bb;  // Lemon chiffon for contrast
+    .lyrics-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1rem;
+
+      .back-to-search-button {
+        background: #f1ae8b;
+        color: #fff;
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 0.9rem;
+        transition: background 0.3s ease;
+
+        &:hover {
+          background: #7c8c94;
+        }
+      }
+
+      h2 {
+        margin: 0;
+        font-size: 1.2rem;
+      }
     }
 
-    .queue-song {
-      width: 100%;
-      text-align: left;
-      background-color: #5d576b;  // Wenge
-      border: 2px solid #f1ae8b;   // Atomic tangerine as border
-      color: #f1ae8b;
-      border-radius: 25px;
-      padding: 0.5rem;
-      cursor: pointer;
-      font-size: 0.9rem;
-      margin-bottom: 0.5rem;
-      transition: all 0.3s ease;
-
-      &:hover {
-        background-color: #f1ae8b;  // Switch to Atomic tangerine on hover
-        color: #fff;
+    .lyrics-content {
+      p {
+        font-size: 1rem;
+        margin: 0.5rem 0;
       }
-      &.active {
-        background-color: #f1ae8b;
-        color: #fff;
+      .lyrics-window {
+        p {
+          margin: 0.5rem 0;
+        }
       }
     }
   }
 }
 
-//
-// 3. Search Controls
-//
-.search-type {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-
-  label {
-    color: #e6ebe0;  // Alabaster for light text
-    font-size: 0.9rem;
-  }
-  select {
-    padding: 0.3rem 0.5rem;
-    font-size: 0.9rem;
-    border-radius: 4px;
-    border: none;
-    background-color: #5d576b;  // Wenge
-    color: #fff;
-    outline: none;
-  }
-}
-
+// Search Bar
 .search-bar {
   form {
     display: flex;
@@ -130,13 +92,13 @@ body {
       font-size: 1rem;
       border: none;
       border-radius: 4px 0 0 4px;
-      background-color: #5d576b;  // Wenge
+      background-color: #5d576b;
       color: #fff;
       outline: none;
     }
 
     button {
-      background-color: #f1ae8b;  // Atomic tangerine
+      background-color: #f1ae8b;
       color: #fff;
       border: none;
       padding: 0 1rem;
@@ -149,15 +111,12 @@ body {
       transition: background-color 0.3s ease;
 
       &:hover {
-        background-color: #7c8c94;  // Slate gray on hover
+        background-color: #7c8c94;
       }
     }
   }
 }
 
-//
-// 4. Results Grid
-//
 .results-container {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
@@ -165,18 +124,14 @@ body {
   align-items: start;
 }
 
-//
-// 5. Card Styles (Song, Artist, Album, Playlist)
-//
-
-// Reusable base styling for cards
+// Card Styles
 .card-base {
-  background-color: #5d576b;  // Wenge
-  border: 1px solid #f1ae8b;   // Atomic tangerine
+  background-color: #5d576b;
+  border: 1px solid #f1ae8b;
   border-radius: 8px;
   padding: 0.5rem;
   text-align: center;
-  color: #e6ebe0;  // Alabaster for light text
+  color: #e6ebe0;
   cursor: pointer;
   transition: transform 0.3s ease;
 
@@ -204,22 +159,21 @@ body {
   .song-info {
     h4 {
       font-size: 0.9rem;
-      color: #f1ae8b;  // Atomic tangerine
+      color: #f1ae8b;
       margin: 0.2rem 0 0.1rem;
     }
     p {
       font-size: 0.8rem;
       margin: 0;
-      color: #e6ebe0;  // Alabaster
+      color: #e6ebe0;
     }
     .play-count {
       font-size: 0.7rem;
-      color: #a2a1a6;  // Cadet gray
+      color: #a2a1a6;
       margin-top: 0.2rem;
     }
   }
 
-  // Icon buttons for play, queue, download
   .card-buttons {
     display: flex;
     justify-content: center;
@@ -227,7 +181,7 @@ body {
     margin-top: 0.5rem;
 
     button {
-      background-color: #f1ae8b;  // Atomic tangerine
+      background-color: #f1ae8b;
       color: #fff;
       border: none;
       font-size: 0.75rem;
@@ -237,12 +191,9 @@ body {
       transition: background-color 0.3s ease;
 
       &:hover {
-        background-color: #7c8c94;  // Slate gray on hover
+        background-color: #7c8c94;
       }
     }
-
-    .play-now-button { /* Additional styling if desired */ }
-    .add-to-queue-button { /* Additional styling if desired */ }
   }
 }
 
@@ -259,7 +210,7 @@ body {
   .artist-info {
     h4 {
       font-size: 0.9rem;
-      color: #f1ae8b;  // Atomic tangerine
+      color: #f1ae8b;
       margin: 0.2rem 0 0;
     }
   }
@@ -285,13 +236,13 @@ body {
     justify-content: center;
     align-items: center;
     font-size: 2rem;
-    color: #f1ae8b;  // Atomic tangerine
+    color: #f1ae8b;
   }
 
   .album-info {
     h4 {
       font-size: 0.8rem;
-      color: #f1ae8b;  // Atomic tangerine
+      color: #f1ae8b;
       margin: 0.2rem 0 0.1rem;
     }
   }
@@ -317,44 +268,75 @@ body {
     justify-content: center;
     align-items: center;
     font-size: 2rem;
-    color: #f1ae8b;  // Atomic tangerine
+    color: #f1ae8b;
   }
 
   .playlist-info {
     h4 {
       font-size: 0.8rem;
-      color: #f1ae8b;  // Atomic tangerine
+      color: #f1ae8b;
       margin: 0.2rem 0 0.1rem;
     }
   }
 }
 
-//
-// 6. Next Button
-//
-.next-button-container {
-  text-align: center;
-  margin: 1rem 0;
-}
+// Controls in the right section
+.right-section {
+  .controls {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    
+    button {
+      background-color: #f1ae8b;
+      color: #fff;
+      border: none;
+      padding: 0.5rem 0.8rem;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: background 0.3s ease;
 
-.next-button {
-  padding: 0.5rem 1rem;
-  background-color: #f1ae8b;  // Atomic tangerine
-  color: #fff;
-  border: none;
-  border-radius: 25px;
-  cursor: pointer;
-  font-size: 0.9rem;
-  transition: background-color 0.3s ease;
-
-  &:hover {
-    background-color: #7c8c94;  // Slate gray on hover
+      &:hover {
+        background: #7c8c94;
+      }
+    }
   }
 }
 
-//
-// 7. Collapsible Audio Player
-//
+// Play Queue Styling
+.play-queue {
+  background-color: #5d576b;
+  border-radius: 8px;
+  padding: 1rem;
+  width: 100%;
+  h3 {
+    margin: 0 0 0.5rem;
+    color: #f1ae8b;
+    text-align: center;
+  }
+  .queue-song {
+    background-color: #f1ae8b;
+    color: #fff;
+    border: none;
+    border-radius: 25px;
+    padding: 0.5rem;
+    cursor: pointer;
+    width: 100%;
+    margin-bottom: 0.5rem;
+    text-align: center;
+    transition: background-color 0.3s ease;
+
+    &:hover {
+      background-color: #7c8c94;
+    }
+  }
+  .queue-song.active {
+    background-color: #7c8c94;
+  }
+}
+
+// Collapsible Audio Player
 .audio-container {
   position: fixed;
   left: 50%;
@@ -364,13 +346,12 @@ body {
   z-index: 1000;
   transition: transform 0.3s ease;
 
-  // When collapsed, move it fully out of view
   &.collapsed {
     transform: translate(-50%, 100%);
   }
 
   .audio-player-container {
-    background: #5d576b;  // Wenge
+    background: #5d576b;
     padding: 0.8rem;
     border-radius: 12px;
     box-shadow: 0px -2px 10px rgba(0, 0, 0, 0.3);
@@ -383,12 +364,11 @@ body {
       backdrop-filter: blur(4px);
     }
 
-    // Collapse/expand button in the top-right corner
     .collapse-button {
       position: absolute;
-      top: -35px;   // slightly above the container
+      top: -35px;
       right: 10px;
-      background: #f1ae8b;  // Atomic tangerine
+      background: #f1ae8b;
       color: #fff;
       border: none;
       font-size: 0.8rem;
@@ -396,14 +376,14 @@ body {
       border-radius: 12px;
       cursor: pointer;
       &:hover {
-        background: #7c8c94;  // Slate gray on hover
+        background: #7c8c94;
       }
     }
   }
 }
 
 .download-song-button {
-  background-color: #f1ae8b;  // Atomic tangerine
+  background-color: #f1ae8b;
   color: #fff;
   border: none;
   font-size: 1rem;
@@ -413,12 +393,12 @@ body {
   transition: background-color 0.3s ease;
 
   &:hover {
-    background-color: #7c8c94;  // Slate gray
+    background-color: #7c8c94;
   }
 }
 
 .icon-button {
-  background-color: #f1ae8b;  // Atomic tangerine
+  background-color: #f1ae8b;
   color: #fff;
   border: none;
   font-size: 1.2rem;
@@ -428,6 +408,19 @@ body {
   transition: background-color 0.3s ease;
   
   &:hover {
-    background-color: #7c8c94;  // Slate gray on hover
+    background-color: #7c8c94;
   }
+}
+
+.download-track-button {
+  position: absolute;
+  top: -35px;
+  left: 10px;
+  background: #b9a0c9;
+  color: #fff;
+  border: none;
+  font-size: 0.8rem;
+  padding: 0.3rem 0.6rem;
+  border-radius: 12px;
+  cursor: pointer;
 }

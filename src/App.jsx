@@ -1,6 +1,13 @@
 import React, { useState, useEffect, useRef } from "react";
 import AudioPlayer from "react-h5-audio-player";
-import { FaList, FaSearch, FaCompactDisc, FaDownload, FaPlay, FaPlus } from "react-icons/fa";
+import {
+  FaList,
+  FaSearch,
+  FaCompactDisc,
+  FaDownload,
+  FaPlay,
+  FaPlus
+} from "react-icons/fa";
 import "react-h5-audio-player/lib/styles.css";
 import "./audio.scss";
 
@@ -19,7 +26,9 @@ async function fetchSongDetailsFromSaavnDevById(songId) {
   try {
     const res = await fetch(`https://jibharo-v.vercel.app/api/songs/${songId}`);
     if (!res.ok) {
-      console.warn(`jibharo-v.vercel.app responded with status=${res.status} for ID=${songId}`);
+      console.warn(
+        `jibharo-v.vercel.app responded with status=${res.status} for ID=${songId}`
+      );
       return null;
     }
     const data = await res.json();
@@ -75,7 +84,8 @@ function unifySongData(jioItem, devDetails) {
 // 4) Grab 320kbps from .downloadUrl
 // ---------------------------
 function getHighestQualityUrl(downloadUrls) {
-  if (!downloadUrls || !Array.isArray(downloadUrls) || downloadUrls.length === 0) return "";
+  if (!downloadUrls || !Array.isArray(downloadUrls) || downloadUrls.length === 0)
+    return "";
   const best = downloadUrls.find((d) => d.quality === "320kbps");
   return best ? best.url : downloadUrls[0].url;
 }
@@ -94,25 +104,27 @@ function shuffleArray(array) {
 
 // ---------------------------
 // 5) fetchRecommendations
-//    Now returns data.data as an array
 // ---------------------------
 async function fetchRecommendations(songId) {
   try {
-    const res = await fetch(`https://jibharo-v.vercel.app/api/songs/${songId}/suggestions`);
+    const res = await fetch(
+      `https://jibharo-v.vercel.app/api/songs/${songId}/suggestions`
+    );
     const data = await res.json();
-    // shape is { success, data: [ {id, name, ...}, ... ] }
     if (data.success && Array.isArray(data.data) && data.data.length > 0) {
       return data.data;
     }
   } catch (err) {
-    console.error("Error fetching suggestions from jibharo-v.vercel.app:", err);
+    console.error(
+      "Error fetching suggestions from jibharo-v.vercel.app:",
+      err
+    );
   }
   return [];
 }
 
 // ---------------------------
 // Provide "download track" helper
-//   - triggers a direct download of the currently playing .mp4
 // ---------------------------
 function downloadCurrentTrack(song) {
   if (!song || !song.downloadUrl) {
@@ -125,43 +137,65 @@ function downloadCurrentTrack(song) {
     return;
   }
 
-  // Fetch the file as a blob
   fetch(bestUrl)
-    .then(response => {
+    .then((response) => {
       if (!response.ok) {
         throw new Error("Network response was not ok");
       }
       return response.blob();
     })
-    .then(blob => {
-      // Create a blob URL for the downloaded file
+    .then((blob) => {
       const blobUrl = window.URL.createObjectURL(blob);
-      
-      // Create an invisible anchor element and set the download attribute
       const anchor = document.createElement("a");
       anchor.href = blobUrl;
       anchor.download = `${song.name || "Track"}.m4a`;
       document.body.appendChild(anchor);
-      
-      // Trigger the download
       anchor.click();
-      
-      // Clean up
       document.body.removeChild(anchor);
       window.URL.revokeObjectURL(blobUrl);
     })
-    .catch(err => {
+    .catch((err) => {
       console.error("Failed to download track:", err);
     });
 }
 
-
+/**
+ * NEW: Fetch lyrics for a given song using lyrics.ovh.
+ */
+async function fetchLyricsForSong(song) {
+  if (!song || !song.name) return { syncable: false, lines: [] };
+  const artist = song.artists?.primary?.[0]?.name || "";
+  const title = song.name;
+  try {
+    const res = await fetch(
+      `https://api.lyrics.ovh/v1/${encodeURIComponent(artist)}/${encodeURIComponent(title)}`
+    );
+    const data = await res.json();
+    if (data.lyrics) {
+      const rawLines = data.lyrics.split("\n");
+      const parsedLines = rawLines.map((line) => {
+        const match = line.match(/^\[(\d+):(\d+\.?\d*)\](.*)$/);
+        if (match) {
+          const minutes = parseInt(match[1], 10);
+          const seconds = parseFloat(match[2]);
+          return { time: minutes * 60 + seconds, text: match[3].trim() };
+        }
+        return { time: null, text: line.trim() };
+      });
+      const isSyncable = parsedLines.every((l) => l.time !== null);
+      return { syncable: isSyncable, lines: parsedLines };
+    }
+  } catch (err) {
+    console.error("Error fetching lyrics:", err);
+  }
+  return { syncable: false, lines: [] };
+}
 
 // ---------------------------
-// Main Player
+// Main Player Component
 // ---------------------------
 const Player = () => {
-  // A) States
+  // States
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [searchType, setSearchType] = useState("song");
@@ -175,7 +209,12 @@ const Player = () => {
   const [playerCollapsed, setPlayerCollapsed] = useState(false);
   const playerRef = useRef(null);
 
-  // B) useEffects
+  // Lyrics-related states
+  const [lyricsVisible, setLyricsVisible] = useState(false);
+  const [lyrics, setLyrics] = useState({ syncable: false, lines: [] });
+  const [currentTime, setCurrentTime] = useState(0);
+
+  // Auto play when queue or index changes
   useEffect(() => {
     if (queue.length > 0 && playerRef.current) {
       playerRef.current.audio.current
@@ -184,7 +223,7 @@ const Player = () => {
     }
   }, [currentIndex, queue]);
 
-  // remove older queue items
+  // Remove older queue items
   useEffect(() => {
     if (currentIndex > 0 && currentIndex < queue.length) {
       setQueue((prev) => prev.slice(currentIndex));
@@ -192,7 +231,73 @@ const Player = () => {
     }
   }, [currentIndex]);
 
-  // C) Searching
+  // Fetch lyrics when the current song changes.
+  useEffect(() => {
+    async function loadLyrics() {
+      const currentSong = queue[currentIndex];
+      if (!currentSong) {
+        setLyrics({ syncable: false, lines: [] });
+        return;
+      }
+      const fetched = await fetchLyricsForSong(currentSong);
+      setLyrics(fetched);
+    }
+    loadLyrics();
+  }, [currentIndex, queue]);
+
+  // Compute current lyric index for syncable lyrics.
+  let currentLyricIndex = -1;
+  if (lyrics.syncable && lyrics.lines.length > 0) {
+    currentLyricIndex = lyrics.lines.findIndex((line, index, arr) => {
+      if (index === arr.length - 1) return currentTime >= line.time;
+      return currentTime >= line.time && currentTime < arr[index + 1].time;
+    });
+  }
+
+  // Render Lyrics Header for fullscreen lyrics view.
+  const renderLyricsHeader = () => (
+    <div className="lyrics-header">
+      <button
+        className="back-to-search-button"
+        onClick={() => setLyricsVisible(false)}
+      >
+        ← Back to Search
+      </button>
+      <h2>Lyrics</h2>
+    </div>
+  );
+
+  // Render the Lyrics Panel in full-screen mode.
+  const renderLyricsFullscreen = () => (
+    <div className="lyrics-fullscreen">
+      {renderLyricsHeader()}
+      <div className="lyrics-content">
+        {lyrics.lines.length === 0 ? (
+          <p>No lyrics found.</p>
+        ) : lyrics.syncable ? (
+          <div className="lyrics-window">
+            <p style={{ opacity: 0.5 }}>
+              {currentLyricIndex > 0 ? lyrics.lines[currentLyricIndex - 1].text : ""}
+            </p>
+            <p style={{ fontWeight: "bold" }}>
+              {currentLyricIndex !== -1 ? lyrics.lines[currentLyricIndex].text : ""}
+            </p>
+            <p style={{ opacity: 0.5 }}>
+              {currentLyricIndex + 1 < lyrics.lines.length ? lyrics.lines[currentLyricIndex + 1].text : ""}
+            </p>
+          </div>
+        ) : (
+          <div className="lyrics-full">
+            {lyrics.lines.map((line, index) => (
+              <p key={index}>{line.text}</p>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  // Handle Search
   const handleSearch = async (e) => {
     e.preventDefault();
     if (!searchQuery) return;
@@ -222,7 +327,6 @@ const Player = () => {
           .filter((r) => (r.type || "").toLowerCase() === "song")
           .map(mapJioSearchItemToBasic);
 
-        // fetch dev details
         const promises = songs.map(async (jioItem) => {
           const devDetails = await fetchSongDetailsFromSaavnDevById(jioItem.id);
           return unifySongData(jioItem, devDetails);
@@ -253,7 +357,7 @@ const Player = () => {
     }
   };
 
-  // D) Next/Previous & Suggestions
+  // Next/Previous & Suggestions
   const handleSongEnd = () => {
     handleNextSong();
   };
@@ -275,10 +379,8 @@ const Player = () => {
         return;
       }
 
-      // **Change #1**: Randomize suggestions to reduce repetition
       let randomized = shuffleArray(suggestions);
-      // Optionally slice the first 3-5
-      const picksCount = 3 + Math.floor(Math.random() * 3); // random 3..5
+      const picksCount = 3 + Math.floor(Math.random() * 3);
       randomized = randomized.slice(0, picksCount);
 
       const suggestedPromises = randomized.map(async (suggItem) => {
@@ -314,7 +416,7 @@ const Player = () => {
     }
   };
 
-  // E) Adding to queue / Play now
+  // Adding to queue / Play now
   const handleAddToQueue = (song) => {
     const newSong = {
       ...song,
@@ -332,7 +434,7 @@ const Player = () => {
     setCurrentIndex(0);
   };
 
-  // F) Artist/Album/Playlist
+  // Artist/Album/Playlist functions
   const handleArtistSelect = async (artist) => {
     try {
       const res = await fetch(
@@ -380,7 +482,7 @@ const Player = () => {
     }
   };
 
-  // G) Pagination
+  // Pagination
   const startIndex = currentPage * pageSize;
   const endIndex = startIndex + pageSize;
   const currentSongResults = searchResults.slice(startIndex, endIndex);
@@ -393,27 +495,13 @@ const Player = () => {
     }
   };
 
-  // H) Render
-  return (
-    <div className="app-container">
-      {/* LEFT SECTION */}
-      <div className="left-section">
-        {/* Search Type */}
-        {/* <div className="search-type">
-          <label htmlFor="searchType">Search for:</label>
-          <select
-            id="searchType"
-            value={searchType}
-            onChange={(e) => setSearchType(e.target.value)}
-          >
-            <option value="song">Song</option>
-            <option value="artist">Artist</option>
-            <option value="album">Album</option>
-            <option value="playlist">Playlist</option>
-          </select>
-        </div> */}
-
-        {/* Search Bar */}
+  // Render Left Section: Either search/results or full-screen lyrics.
+  const renderLeftSection = () => {
+    if (lyricsVisible) {
+      return renderLyricsFullscreen();
+    }
+    return (
+      <>
         <div className="search-bar">
           <form onSubmit={handleSearch}>
             <input
@@ -428,7 +516,6 @@ const Player = () => {
           </form>
         </div>
 
-        {/* Results */}
         {searchType === "song" && (
           <>
             <div className="results-container">
@@ -443,7 +530,6 @@ const Player = () => {
                     <p>{song?.artists?.primary?.[0]?.name || ""}</p>
                     <p className="play-count">{song.playCount + " plays"}</p>
                   </div>
-
                   <div className="card-buttons">
                     <button
                       className="icon-button play-now-button"
@@ -476,107 +562,32 @@ const Player = () => {
             )}
           </>
         )}
+      </>
+    );
+  };
 
-        {searchType === "artist" && (
-          <div className="results-container">
-            {currentSongResults.map((artist, idx) => (
-              <div
-                key={idx}
-                className="artist-card"
-                onClick={() => handleArtistSelect(artist)}
-              >
-                {artist.image ? (
-                  <img src={artist.image} alt={artist.title || artist.name} />
-                ) : (
-                  <div className="fallback-icon">
-                    <FaCompactDisc />
-                  </div>
-                )}
-                <div className="artist-info">
-                  <h4>{artist.title || artist.name}</h4>
-                </div>
-              </div>
-            ))}
-            {searchResults.length > pageSize && (
-              <div className="next-button-container">
-                <button className="next-button" onClick={handleNextPage}>
-                  Next {pageSize}
-                </button>
-              </div>
-            )}
-          </div>
-        )}
-
-        {searchType === "album" && (
-          <div className="results-container">
-            {currentSongResults.map((album, idx) => (
-              <div
-                key={idx}
-                className="album-card"
-                onClick={() => handleAlbumSelect(album)}
-              >
-                {album.image ? (
-                  <img src={album.image} alt={album.title || album.name} />
-                ) : (
-                  <div className="fallback-icon">
-                    <FaCompactDisc />
-                  </div>
-                )}
-                <div className="album-info">
-                  <h4>{album.title || album.name}</h4>
-                </div>
-              </div>
-            ))}
-            {searchResults.length > pageSize && (
-              <div className="next-button-container">
-                <button className="next-button" onClick={handleNextPage}>
-                  Next {pageSize}
-                </button>
-              </div>
-            )}
-          </div>
-        )}
-
-        {searchType === "playlist" && (
-          <div className="results-container">
-            {currentSongResults.map((pl, idx) => (
-              <div
-                key={idx}
-                className="playlist-card"
-                onClick={() => handlePlaylistSelect(pl)}
-              >
-                {pl.image ? (
-                  <img src={pl.image} alt={pl.title || pl.name} />
-                ) : (
-                  <div className="fallback-icon">
-                    <FaCompactDisc />
-                  </div>
-                )}
-                <div className="playlist-info">
-                  <h4>{pl.title || pl.name}</h4>
-                </div>
-              </div>
-            ))}
-            {searchResults.length > pageSize && (
-              <div className="next-button-container">
-                <button className="next-button" onClick={handleNextPage}>
-                  Next {pageSize}
-                </button>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
+  return (
+    <div className="app-container">
+      {/* LEFT SECTION */}
+      <div className="left-section">{renderLeftSection()}</div>
 
       {/* RIGHT SECTION */}
       <div className="right-section">
-        <button
-          className="queue-toggle-button"
-          onClick={() => setShowQueue(!showQueue)}
-        >
-          <FaList />
-          {showQueue ? " Hide Queue" : " Show Queue"}
-        </button>
+        <div className="controls">
+          <button
+            className="queue-toggle-button"
+            onClick={() => setShowQueue(!showQueue)}
+          >
+            <FaList />
+            {showQueue ? " Hide Queue" : " Show Queue"}
+          </button>
+          <button
+            className="lyrics-toggle-button"
+            onClick={() => setLyricsVisible(!lyricsVisible)}
+          >
+            Lyrics
+          </button>
+        </div>
         {showQueue && (
           <div className="play-queue">
             <h3>Play Queue</h3>
@@ -595,44 +606,24 @@ const Player = () => {
 
       {/* Collapsible Audio Player at Bottom */}
       {queue.length > 0 && (
-        <div
-          className={`audio-container ${playerCollapsed ? "collapsed" : ""}`}
-        >
+        <div className={`audio-container ${playerCollapsed ? "collapsed" : ""}`}>
           <div className="audio-player-container">
-            {/* 
-              Change #2: Small download button for current track 
-              You can position it anywhere inside audio-player-container
-            */}
             <button
-              style={{
-                position: "absolute",
-                top: "-35px",
-                left: "10px",
-                background: "#b9a0c9",
-                color: "#fff",
-                border: "none",
-                fontSize: "0.8rem",
-                padding: "0.3rem 0.6rem",
-                borderRadius: "12px",
-                cursor: "pointer",
-              }}
+              className="download-track-button"
               onClick={(e) => {
-                e.preventDefault();      //  <-- ensure no default button behaviors
-                e.stopPropagation();     //  <-- and no parent clicks
+                e.preventDefault();
+                e.stopPropagation();
                 downloadCurrentTrack(queue[currentIndex]);
               }}
             >
               Download
             </button>
-
-
             <button
               className="collapse-button"
               onClick={() => setPlayerCollapsed(!playerCollapsed)}
             >
               {playerCollapsed ? "Show Player" : "Hide Player"}
             </button>
-
             <AudioPlayer
               ref={playerRef}
               autoPlay
@@ -642,9 +633,8 @@ const Player = () => {
               onClickPrevious={handlePreviousSong}
               onEnded={handleSongEnd}
               src={queue[currentIndex]?.src || ""}
-              onPlay={() =>
-                console.log("Playing:", queue[currentIndex]?.title)
-              }
+              onPlay={() => console.log("Playing:", queue[currentIndex]?.title)}
+              onListen={(time) => setCurrentTime(time)}
             />
           </div>
         </div>

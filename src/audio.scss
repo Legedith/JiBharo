@@ -115,7 +115,10 @@ body {
       }
     }
   }
+  /* Add the following line to create the gap */
+  margin-bottom: 1rem;
 }
+
 
 .results-container {
   display: grid;

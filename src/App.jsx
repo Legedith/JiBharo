@@ -11,191 +11,61 @@ import {
 import "react-h5-audio-player/lib/styles.css";
 import "./audio.scss";
 
-/**
- * 1) fetchSongDetailsFromSaavnDevById   -> fetch track details from jibharo-v
- * 2) mapJioSearchItemToBasic           -> minimal shape from JioSaavn search
- * 3) unifySongData                     -> merges Jio item with dev details
- * 4) getHighestQualityUrl              -> picks 320kbps from .downloadUrl
- * 5) fetchRecommendations              -> fetch suggestions from jibharo-v, returns array of songs
- */
+const FALLBACK_URL = "https://jibharo-v.vercel.app";
 
-// ---------------------------
-// 1) Retrieve details from jibharo-v
-// ---------------------------
-async function fetchSongDetailsFromSaavnDevById(songId) {
-  try {
-    const res = await fetch(`https://jibharo-v.vercel.app/api/songs/${songId}`);
-    if (!res.ok) {
-      console.warn(
-        `jibharo-v.vercel.app responded with status=${res.status} for ID=${songId}`
-      );
-      return null;
-    }
-    const data = await res.json();
-    if (data.success && Array.isArray(data.data) && data.data.length > 0) {
-      return data.data[0]; // The first track details
-    }
-  } catch (err) {
-    console.error("Error fetching song details from jibharo-v.vercel.app:", err);
-  }
-  return null;
-}
+const App = () => {
+  // Try to load the API base URL from localStorage if it exists.
+  const [apiBaseUrl, setApiBaseUrl] = useState(() => {
+    return localStorage.getItem("apiBaseUrl") || "";
+  });
+  const [inputUrl, setInputUrl] = useState("");
 
-// ---------------------------
-// 2) Minimal shape for jio results
-// ---------------------------
-function mapJioSearchItemToBasic(item) {
-  return {
-    id: item.id || "",
-    type: (item.type || "").toLowerCase(),
-    title: item.title || "",
-    image: item.image || null
+  // Remove any trailing slash from the provided URL.
+  const normalizeUrl = (url) => url.replace(/\/+$/, "");
+
+  const handleApiSubmit = (e) => {
+    e.preventDefault();
+    let normalized = normalizeUrl(inputUrl.trim());
+    // If user enters "honor", fallback to FALLBACK_URL
+    if (normalized.toLowerCase() === "honor") {
+      normalized = FALLBACK_URL;
+    }
+    if (normalized) {
+      setApiBaseUrl(normalized);
+      localStorage.setItem("apiBaseUrl", normalized);
+    }
   };
-}
 
-// ---------------------------
-// 3) Merge Jio item + dev item
-// ---------------------------
-function unifySongData(jioItem, devDetails) {
-  if (!devDetails) {
-    return {
-      id: jioItem.id,
-      name: jioItem.title,
-      type: "song",
-      playCount: 0,
-      downloadUrl: [],
-      image: jioItem.image ? [{ url: jioItem.image }] : [],
-      artists: { primary: [{ name: "" }] }
-    };
-  }
-
-  return {
-    id: devDetails.id || jioItem.id,
-    name: devDetails.name || jioItem.title,
-    type: devDetails.type || "song",
-    playCount: devDetails.playCount || 0,
-    downloadUrl: devDetails.downloadUrl || [],
-    image: devDetails.image || (jioItem.image ? [{ url: jioItem.image }] : []),
-    artists: devDetails.artists || { primary: [{ name: "" }] }
+  // Allow user to reset API configuration.
+  const resetApi = () => {
+    localStorage.removeItem("apiBaseUrl");
+    setApiBaseUrl("");
+    setInputUrl("");
   };
-}
 
-// ---------------------------
-// 4) Grab 320kbps from .downloadUrl
-// ---------------------------
-function getHighestQualityUrl(downloadUrls) {
-  if (!downloadUrls || !Array.isArray(downloadUrls) || downloadUrls.length === 0)
-    return "";
-  const best = downloadUrls.find((d) => d.quality === "320kbps");
-  return best ? best.url : downloadUrls[0].url;
-}
-
-// ---------------------------
-// 4a) Shuffle array utility
-// ---------------------------
-function shuffleArray(array) {
-  const arr = [...array];
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
-  return arr;
-}
-
-// ---------------------------
-// 5) fetchRecommendations
-// ---------------------------
-async function fetchRecommendations(songId) {
-  try {
-    const res = await fetch(
-      `https://jibharo-v.vercel.app/api/songs/${songId}/suggestions`
-    );
-    const data = await res.json();
-    if (data.success && Array.isArray(data.data) && data.data.length > 0) {
-      return data.data;
-    }
-  } catch (err) {
-    console.error(
-      "Error fetching suggestions from jibharo-v.vercel.app:",
-      err
+  // If no API base URL is provided, show a configuration screen.
+  if (!apiBaseUrl) {
+    return (
+      <div className="api-config">
+        <h2>Enter API Base URL</h2>
+        <form onSubmit={handleApiSubmit}>
+          <input
+            type="text"
+            placeholder='Enter your API URL (e.g. https://your-api.com)'
+            value={inputUrl}
+            onChange={(e) => setInputUrl(e.target.value)}
+          />
+          <button type="submit">Submit</button>
+        </form>
+      </div>
     );
   }
-  return [];
-}
 
-// ---------------------------
-// Provide "download track" helper
-// ---------------------------
-function downloadCurrentTrack(song) {
-  if (!song || !song.downloadUrl) {
-    console.log("No current track or no download URL");
-    return;
-  }
-  const bestUrl = getHighestQualityUrl(song.downloadUrl);
-  if (!bestUrl) {
-    console.log("No best URL found for current track.");
-    return;
-  }
+  return <Player apiBaseUrl={apiBaseUrl} onResetApi={resetApi} />;
+};
 
-  fetch(bestUrl)
-    .then((response) => {
-      if (!response.ok) {
-        throw new Error("Network response was not ok");
-      }
-      return response.blob();
-    })
-    .then((blob) => {
-      const blobUrl = window.URL.createObjectURL(blob);
-      const anchor = document.createElement("a");
-      anchor.href = blobUrl;
-      anchor.download = `${song.name || "Track"}.m4a`;
-      document.body.appendChild(anchor);
-      anchor.click();
-      document.body.removeChild(anchor);
-      window.URL.revokeObjectURL(blobUrl);
-    })
-    .catch((err) => {
-      console.error("Failed to download track:", err);
-    });
-}
-
-/**
- * NEW: Fetch lyrics for a given song using lyrics.ovh.
- */
-async function fetchLyricsForSong(song) {
-  if (!song || !song.name) return { syncable: false, lines: [] };
-  const artist = song.artists?.primary?.[0]?.name || "";
-  const title = song.name;
-  try {
-    const res = await fetch(
-      `https://api.lyrics.ovh/v1/${encodeURIComponent(artist)}/${encodeURIComponent(title)}`
-    );
-    const data = await res.json();
-    if (data.lyrics) {
-      const rawLines = data.lyrics.split("\n");
-      const parsedLines = rawLines.map((line) => {
-        const match = line.match(/^\[(\d+):(\d+\.?\d*)\](.*)$/);
-        if (match) {
-          const minutes = parseInt(match[1], 10);
-          const seconds = parseFloat(match[2]);
-          return { time: minutes * 60 + seconds, text: match[3].trim() };
-        }
-        return { time: null, text: line.trim() };
-      });
-      const isSyncable = parsedLines.every((l) => l.time !== null);
-      return { syncable: isSyncable, lines: parsedLines };
-    }
-  } catch (err) {
-    console.error("Error fetching lyrics:", err);
-  }
-  return { syncable: false, lines: [] };
-}
-
-// ---------------------------
-// Main Player Component
-// ---------------------------
-const Player = () => {
-  // States
+const Player = ({ apiBaseUrl, onResetApi }) => {
+  // States for search, queue, player UI and lyrics.
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [searchType, setSearchType] = useState("song");
@@ -209,12 +79,12 @@ const Player = () => {
   const [playerCollapsed, setPlayerCollapsed] = useState(false);
   const playerRef = useRef(null);
 
-  // Lyrics-related states
+  // Lyrics-related states.
   const [lyricsVisible, setLyricsVisible] = useState(false);
   const [lyrics, setLyrics] = useState({ syncable: false, lines: [] });
   const [currentTime, setCurrentTime] = useState(0);
 
-  // Auto play when queue or index changes
+  // Auto-play when queue or index changes.
   useEffect(() => {
     if (queue.length > 0 && playerRef.current) {
       playerRef.current.audio.current
@@ -223,7 +93,7 @@ const Player = () => {
     }
   }, [currentIndex, queue]);
 
-  // Remove older queue items
+  // Remove older queue items once a new song starts.
   useEffect(() => {
     if (currentIndex > 0 && currentIndex < queue.length) {
       setQueue((prev) => prev.slice(currentIndex));
@@ -231,7 +101,7 @@ const Player = () => {
     }
   }, [currentIndex]);
 
-  // Fetch lyrics when the current song changes.
+  // Fetch lyrics whenever the current song changes.
   useEffect(() => {
     async function loadLyrics() {
       const currentSong = queue[currentIndex];
@@ -245,7 +115,7 @@ const Player = () => {
     loadLyrics();
   }, [currentIndex, queue]);
 
-  // Compute current lyric index for syncable lyrics.
+  // Compute the current lyric index for synchronized lyrics.
   let currentLyricIndex = -1;
   if (lyrics.syncable && lyrics.lines.length > 0) {
     currentLyricIndex = lyrics.lines.findIndex((line, index, arr) => {
@@ -254,7 +124,201 @@ const Player = () => {
     });
   }
 
-  // Render Lyrics Header for fullscreen lyrics view.
+  // ---------------------------
+  // API call functions using apiBaseUrl
+  // ---------------------------
+  async function fetchSongDetailsFromSaavnDevById(songId) {
+    try {
+      const res = await fetch(`${apiBaseUrl}/api/songs/${songId}`);
+      if (!res.ok) {
+        console.warn(
+          `${apiBaseUrl} responded with status=${res.status} for ID=${songId}`
+        );
+        return null;
+      }
+      const data = await res.json();
+      if (data.success && Array.isArray(data.data) && data.data.length > 0) {
+        return data.data[0];
+      }
+    } catch (err) {
+      console.error("Error fetching song details from API:", err);
+    }
+    return null;
+  }
+
+  async function fetchRecommendations(songId) {
+    try {
+      const res = await fetch(`${apiBaseUrl}/api/songs/${songId}/suggestions`);
+      const data = await res.json();
+      if (data.success && Array.isArray(data.data) && data.data.length > 0) {
+        return data.data;
+      }
+    } catch (err) {
+      console.error("Error fetching suggestions from API:", err);
+    }
+    return [];
+  }
+
+  function mapJioSearchItemToBasic(item) {
+    return {
+      id: item.id || "",
+      type: (item.type || "").toLowerCase(),
+      title: item.title || "",
+      image: item.image || null
+    };
+  }
+
+  function unifySongData(jioItem, devDetails) {
+    if (!devDetails) {
+      return {
+        id: jioItem.id,
+        name: jioItem.title,
+        type: "song",
+        playCount: 0,
+        downloadUrl: [],
+        image: jioItem.image ? [{ url: jioItem.image }] : [],
+        artists: { primary: [{ name: "" }] }
+      };
+    }
+    return {
+      id: devDetails.id || jioItem.id,
+      name: devDetails.name || jioItem.title,
+      type: devDetails.type || "song",
+      playCount: devDetails.playCount || 0,
+      downloadUrl: devDetails.downloadUrl || [],
+      image: devDetails.image || (jioItem.image ? [{ url: jioItem.image }] : []),
+      artists: devDetails.artists || { primary: [{ name: "" }] }
+    };
+  }
+
+  function getHighestQualityUrl(downloadUrls) {
+    if (!downloadUrls || !Array.isArray(downloadUrls) || downloadUrls.length === 0)
+      return "";
+    const best = downloadUrls.find((d) => d.quality === "320kbps");
+    return best ? best.url : downloadUrls[0].url;
+  }
+
+  function shuffleArray(array) {
+    const arr = [...array];
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
+
+  function downloadCurrentTrack(song) {
+    if (!song || !song.downloadUrl) {
+      console.log("No current track or no download URL");
+      return;
+    }
+    const bestUrl = getHighestQualityUrl(song.downloadUrl);
+    if (!bestUrl) {
+      console.log("No best URL found for current track.");
+      return;
+    }
+    fetch(bestUrl)
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Network response was not ok");
+        }
+        return response.blob();
+      })
+      .then((blob) => {
+        const blobUrl = window.URL.createObjectURL(blob);
+        const anchor = document.createElement("a");
+        anchor.href = blobUrl;
+        anchor.download = `${song.name || "Track"}.m4a`;
+        document.body.appendChild(anchor);
+        anchor.click();
+        document.body.removeChild(anchor);
+        window.URL.revokeObjectURL(blobUrl);
+      })
+      .catch((err) => {
+        console.error("Failed to download track:", err);
+      });
+  }
+
+  /**
+   * Fetch lyrics for a given song using lyrics.ovh and The Lyrics API.
+   */
+  async function fetchLyricsForSong(song) {
+    if (!song || !song.name) return { syncable: false, lines: [] };
+    const artist =
+      song.artists && song.artists.primary && song.artists.primary[0]
+        ? song.artists.primary[0].name
+        : "";
+    const title = song.name;
+
+    function parseLyrics(lyricsText) {
+      const rawLines = lyricsText.split("\n");
+      const parsedLines = rawLines.map((line) => {
+        const match = line.match(/^\[(\d+):(\d+\.?\d*)\](.*)$/);
+        if (match) {
+          const minutes = parseInt(match[1], 10);
+          const seconds = parseFloat(match[2]);
+          return { time: minutes * 60 + seconds, text: match[3].trim() };
+        }
+        return { time: null, text: line.trim() };
+      });
+      const isSyncable = parsedLines.every((l) => l.time !== null);
+      return { syncable: isSyncable, lines: parsedLines };
+    }
+
+    async function tryLyricsOvh() {
+      try {
+        const url = `https://api.lyrics.ovh/v1/${encodeURIComponent(
+          artist
+        )}/${encodeURIComponent(title)}`;
+        const res = await fetch(url);
+        console.log("lyrics.ovh status:", res.status);
+        const data = await res.json();
+        console.log("lyrics.ovh data:", data);
+        return data && data.lyrics ? data : null;
+      } catch (err) {
+        console.error("Error fetching from lyrics.ovh:", err);
+        return null;
+      }
+    }
+
+    async function tryTheLyricsAPI() {
+      try {
+        const url = "https://the-lyrics-api.herokuapp.com/lyrics";
+        const res = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            artist: artist,
+            song: title,
+            lang: "hin"
+          })
+        });
+        console.log("The Lyrics API status:", res.status);
+        const data = await res.json();
+        console.log("The Lyrics API data:", data);
+        return data && data.lyrics ? data : null;
+      } catch (err) {
+        console.error("Error fetching from The Lyrics API:", err);
+        return null;
+      }
+    }
+
+    let data = await tryLyricsOvh();
+    if (!data || !data.lyrics.trim()) {
+      console.log("lyrics.ovh returned no/empty lyrics. Trying The Lyrics API...");
+      data = await tryTheLyricsAPI();
+    }
+    if (data && data.lyrics) {
+      console.log("Lyrics found:", data.lyrics);
+      return parseLyrics(data.lyrics);
+    }
+    console.warn("No lyrics found for this song.");
+    return { syncable: false, lines: [] };
+  }
+
+  // ---------------------------
+  // UI Rendering Functions
+  // ---------------------------
   const renderLyricsHeader = () => (
     <div className="lyrics-header">
       <button
@@ -267,7 +331,6 @@ const Player = () => {
     </div>
   );
 
-  // Render the Lyrics Panel in full-screen mode.
   const renderLyricsFullscreen = () => (
     <div className="lyrics-fullscreen">
       {renderLyricsHeader()}
@@ -283,7 +346,9 @@ const Player = () => {
               {currentLyricIndex !== -1 ? lyrics.lines[currentLyricIndex].text : ""}
             </p>
             <p style={{ opacity: 0.5 }}>
-              {currentLyricIndex + 1 < lyrics.lines.length ? lyrics.lines[currentLyricIndex + 1].text : ""}
+              {currentLyricIndex + 1 < lyrics.lines.length
+                ? lyrics.lines[currentLyricIndex + 1].text
+                : ""}
             </p>
           </div>
         ) : (
@@ -297,7 +362,9 @@ const Player = () => {
     </div>
   );
 
-  // Handle Search
+  // ---------------------------
+  // Event Handlers
+  // ---------------------------
   const handleSearch = async (e) => {
     e.preventDefault();
     if (!searchQuery) return;
@@ -357,7 +424,6 @@ const Player = () => {
     }
   };
 
-  // Next/Previous & Suggestions
   const handleSongEnd = () => {
     handleNextSong();
   };
@@ -416,7 +482,6 @@ const Player = () => {
     }
   };
 
-  // Adding to queue / Play now
   const handleAddToQueue = (song) => {
     const newSong = {
       ...song,
@@ -434,15 +499,17 @@ const Player = () => {
     setCurrentIndex(0);
   };
 
-  // Artist/Album/Playlist functions
+  // Artist/Album/Playlist selection functions.
   const handleArtistSelect = async (artist) => {
     try {
       const res = await fetch(
-        `https://jibharo-v.vercel.app/api/artists/${artist.id}/songs?sortBy=popularity&sortOrder=desc&page=0`
+        `${apiBaseUrl}/api/artists/${artist.id}/songs?sortBy=popularity&sortOrder=desc&page=0`
       );
       const data = await res.json();
       if (data.success && data.data?.songs) {
-        const sorted = data.data.songs.sort((a, b) => (b.playCount || 0) - (a.playCount || 0));
+        const sorted = data.data.songs.sort(
+          (a, b) => (b.playCount || 0) - (a.playCount || 0)
+        );
         setSearchResults(sorted);
         setCurrentPage(0);
         setSearchType("song");
@@ -454,10 +521,12 @@ const Player = () => {
 
   const handleAlbumSelect = async (album) => {
     try {
-      const res = await fetch(`https://jibharo-v.vercel.app/api/albums?id=${album.id}`);
+      const res = await fetch(`${apiBaseUrl}/api/albums?id=${album.id}`);
       const data = await res.json();
       if (data.success && data.data?.songs) {
-        const sorted = data.data.songs.sort((a, b) => (b.playCount || 0) - (a.playCount || 0));
+        const sorted = data.data.songs.sort(
+          (a, b) => (b.playCount || 0) - (a.playCount || 0)
+        );
         setSearchResults(sorted);
         setCurrentPage(0);
         setSearchType("song");
@@ -469,10 +538,12 @@ const Player = () => {
 
   const handlePlaylistSelect = async (playlist) => {
     try {
-      const res = await fetch(`https://jibharo-v.vercel.app/api/playlists?id=${playlist.id}`);
+      const res = await fetch(`${apiBaseUrl}/api/playlists?id=${playlist.id}`);
       const data = await res.json();
       if (data.success && data.data?.songs) {
-        const sorted = data.data.songs.sort((a, b) => (b.playCount || 0) - (a.playCount || 0));
+        const sorted = data.data.songs.sort(
+          (a, b) => (b.playCount || 0) - (a.playCount || 0)
+        );
         setSearchResults(sorted);
         setCurrentPage(0);
         setSearchType("song");
@@ -482,7 +553,7 @@ const Player = () => {
     }
   };
 
-  // Pagination
+  // Pagination.
   const startIndex = currentPage * pageSize;
   const endIndex = startIndex + pageSize;
   const currentSongResults = searchResults.slice(startIndex, endIndex);
@@ -495,7 +566,7 @@ const Player = () => {
     }
   };
 
-  // Render Left Section: Either search/results or full-screen lyrics.
+  // Render the left section: either the search/results view or full-screen lyrics.
   const renderLeftSection = () => {
     if (lyricsVisible) {
       return renderLyricsFullscreen();
@@ -587,6 +658,9 @@ const Player = () => {
           >
             Lyrics
           </button>
+          <button className="change-api-button" onClick={onResetApi}>
+            Change API
+          </button>
         </div>
         {showQueue && (
           <div className="play-queue">
@@ -643,4 +717,4 @@ const Player = () => {
   );
 };
 
-export default Player;
+export default App;
